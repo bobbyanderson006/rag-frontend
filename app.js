@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000";
+const API_URL = "rag-backend-production-f563.up.railway.app";
 
 // --- STATE MANAGEMENT ---
 let chats = [];           // Array to hold all our chat sessions
