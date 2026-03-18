@@ -1,4 +1,4 @@
-const API_URL = "https://rag-backend-production-f563.up.railway.app";
+const API_URL = "http://localhost:8000";
 
 // --- STATE MANAGEMENT ---
 let chats = [];           // Array to hold all our chat sessions
@@ -186,7 +186,14 @@ function renderChat() {
             msgDiv.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-800', 'self-start', 'rounded-tl-none');
             
             // FIX 1: Parse the LLM's text through the Markdown library!
-            let parsedText = marked.parse(msg.text);
+            let parsedText = msg.text;
+            try {
+                if (typeof marked !== 'undefined') {
+                    parsedText = marked.parse(msg.text);
+                }
+            } catch (e) {
+                console.warn("Markdown error, using raw text.");
+            }
             let contentHTML = `<div class="markdown-body">${parsedText}</div>`;
             
             // --- UPGRADED CITATION UI (STRICT HEIGHT LIMIT) ---
@@ -338,9 +345,11 @@ async function fetchChunks() {
 function renderChunks(filterText = "") {
     chunksGrid.innerHTML = '';
     
-    const filtered = chunksData.filter(chunk => 
-        chunk.content.toLowerCase().includes(filterText.toLowerCase())
-    );
+    // FIX: Check for chunk.text instead of chunk.content
+    const filtered = chunksData.filter(chunk => {
+        const textData = chunk.text || chunk.content || "";
+        return textData.toLowerCase().includes(filterText.toLowerCase());
+    });
 
     if (filtered.length === 0) {
         chunksGrid.innerHTML = `<div class="col-span-full text-center text-slate-400 py-10">No chunks found. Upload a document or adjust search.</div>`;
@@ -349,20 +358,24 @@ function renderChunks(filterText = "") {
 
     filtered.forEach(chunk => {
         const type = chunk.metadata.type || 'text';
-        let badgeColor = 'bg-slate-100 text-slate-600'; // text
+        let badgeColor = 'bg-slate-100 text-slate-600'; 
         if (type === 'table') badgeColor = 'bg-emerald-100 text-emerald-700';
         if (type === 'image') badgeColor = 'bg-blue-100 text-blue-700';
+
+        // FIX: Grab the correct text variable
+        const textData = chunk.text || chunk.content || "";
 
         const card = document.createElement('div');
         card.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-3";
         
+        // Added fallback for page number in case TXT/CSV don't have one
         card.innerHTML = `
             <div class="flex justify-between items-start border-b border-slate-100 pb-2">
                 <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md ${badgeColor}">${type}</span>
-                <span class="text-xs text-slate-400 font-medium">Page ${chunk.metadata.page}</span>
+                <span class="text-xs text-slate-400 font-medium">Page ${chunk.metadata.page || 1}</span>
             </div>
             <div class="text-sm text-slate-700 whitespace-pre-wrap flex-1 overflow-hidden overflow-ellipsis break-words max-h-40 overflow-y-auto custom-scrollbar">
-                ${chunk.content}
+                ${textData}
             </div>
             <div class="bg-slate-50 p-2 rounded-lg text-[10px] text-slate-500 font-mono overflow-x-auto">
                 ${JSON.stringify(chunk.metadata)}
