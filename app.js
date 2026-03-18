@@ -359,6 +359,8 @@ function renderChunks(filterText = "") {
     filtered.forEach(chunk => {
         const type = chunk.metadata.type || 'text';
         let badgeColor = 'bg-slate-100 text-slate-600'; 
+        // Add this right under the image badge logic in renderChunks
+        if (type === 'audio') badgeColor = 'bg-purple-100 text-purple-700';
         if (type === 'table') badgeColor = 'bg-emerald-100 text-emerald-700';
         if (type === 'image') badgeColor = 'bg-blue-100 text-blue-700';
 
